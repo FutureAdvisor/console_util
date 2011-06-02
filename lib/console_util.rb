@@ -20,6 +20,15 @@ module ConsoleUtil
       
       true
     end
+    
+    # Import a MySQL dump file.
+    # [This may work with other databases, but has only been tested with MySQL.]
+    def import_mysql_dump(filename)
+      sql_dump_file = File.open(Rails.root.join('sql', "#{filename}.sql"))
+      while sql_statement = sql_dump_file.gets(";\n") do
+        ActiveRecord::Base.connection.execute(sql_statement) unless sql_statement.blank?
+      end
+    end
 
     # Load all models into the environment
     def load_all_models
