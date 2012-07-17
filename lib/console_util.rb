@@ -2,6 +2,8 @@ require 'console_util/color'
 
 module ConsoleUtil
   class << self
+    attr_reader :suppressed_output
+    
     # Monkey-patch the ActiveRecord connection to output the SQL query before
     # executing it.
     def output_sql_to_console(options = {})
@@ -54,13 +56,15 @@ module ConsoleUtil
     #   # => <# The result of #foo >
     def suppress_stdout
       original_stdout = $stdout
-      $stdout = fake = StringIO.new
+      $stdout = suppressed_output = StringIO.new
       begin
-        capture = yield(original_stdout)
+        return_value = yield(original_stdout)
       ensure
         $stdout = original_stdout
+        @suppressed_output ||= ""
+        @suppressed_output << suppressed_output.string
       end
-      capture
+      return_value
     end
   end
 end
