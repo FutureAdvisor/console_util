@@ -100,7 +100,7 @@ module ConsoleUtil
               read_buffer = line_match[2]           # save remaining partial line for the next iteration
             end
           rescue EOFError
-            read_buffer.grep(expression)  # grep any remaining partial line at EOF
+            print read_buffer.grep(expression)  # grep any remaining partial line at EOF
             break
           end
         end
