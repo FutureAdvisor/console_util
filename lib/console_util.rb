@@ -56,13 +56,13 @@ module ConsoleUtil
     #   # => <# The result of #foo >
     def suppress_stdout
       original_stdout = $stdout
-      $stdout = suppressed_output = StringIO.new
+      $stdout = output_buffer = StringIO.new
       begin
         return_value = yield(original_stdout)
       ensure
         $stdout = original_stdout
         @suppressed_output ||= ""
-        @suppressed_output << suppressed_output.string
+        @suppressed_output << output_buffer.string
       end
       return_value
     end
