@@ -58,34 +58,18 @@ module ConsoleUtil
       # write only (which represents a fake $stdout).
       placeholder_in, placeholder_out = IO.pipe
       
-      # Fork off a child process to handle the block.  We do this in a child process
-      # so that as soon as placeholder_out starts receiving data a second child
-      # process can operate on it via placeholder_in
-      pid_1 = fork {
-        # replace $stdout with placeholder_out
-        $stdout.reopen(placeholder_out)
-        
-        # we have to close both placeholder_out and placeholder_in because all instances
-        # of an IO stream must be closed in order for it to ever reach EOF.  There's three
-        # in this method; one in each child process and one in the main process.
-        placeholder_out.close
-        placeholder_in.close
-        
-        # sync $stdout so that we can start operating on it as soon as possible
-        $stdout.sync
-        
-        # allow the block to execute
-        yield
-      }
-      
       # This child process handles the grep'ing.  Its done in a child process so that
-      # it can operate in parallel with the other one.
-      pid_2 = fork {
+      # it can operate in parallel with the main process.
+      pid = fork {
         # sync $stdout so we can report any matches asap
         $stdout.sync
         
-        # same as the first child process
+        # replace $stdout with placeholder_out
         $stdin.reopen(placeholder_in)
+        
+        # we have to close both placeholder_out and placeholder_in because all instances
+        # of an IO stream must be closed in order for it to ever reach EOF.  There's two
+        # in this method; one in the child process and one in the main process.
         placeholder_in.close
         placeholder_out.close
         
@@ -106,21 +90,37 @@ module ConsoleUtil
         end
       }
       
-      # close this processes instances of placeholder_in and placeholder_out
+      # Save the original stdout out to a variable so we can use it again after this
+      # method is done
+      original_stdout = $stdout
+      
+      # Redirect stdout to our pipe
+      $stdout = placeholder_out
+      
+      # sync $stdout so that we can start operating on it as soon as possible
+      $stdout.sync
+      
+      # allow the block to execute and save its return value
+      return_value = yield
+      
+      # Set stdout back to the original so output will flow again
+      $stdout = original_stdout
+      
+      # close the main instances of placeholder_in and placeholder_out
       placeholder_in.close
       placeholder_out.close
       
-      # Wait for both child processes to finish
-      Process.wait pid_1
-      Process.wait pid_2
+      # Wait for the child processes to finish
+      Process.wait pid
       
       # Because the connection to the database has a tendency to go away when calling this, reconnect here
+      # if we're using ActiveRecord
       if defined?(ActiveRecord)
         suppress_stdout { ActiveRecord::Base.verify_active_connections! }
       end
       
-      # return nil
-      nil
+      # return the value of the block
+      return_value
     end
 
     # Allows you to suppress $stdout but allows you to send certain messages to $stdout
