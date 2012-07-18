@@ -2,6 +2,8 @@ require 'console_util/color'
 
 module ConsoleUtil
   class << self
+    attr_reader :suppressed_output
+    
     # Monkey-patch the ActiveRecord connection to output the SQL query before
     # executing it.
     def output_sql_to_console(options = {})
@@ -36,6 +38,33 @@ module ConsoleUtil
         model_match = model_file.to_s.match(/^(.*)\.rb$/)
         model_match[1].classify.constantize if model_match
       end
+    end
+    
+    # Allows you to suppress $stdout but allows you to send certain messages to $stdout
+    # Ex:
+    #   def foo
+    #     puts "lots of stuff directed to $stdout that I don't want to see."
+    #   end
+    #   
+    #   suppress_stdout do |stdout|
+    #     stdout.puts "About to call #foo"
+    #     foo
+    #     stdout.puts "Called foo"
+    #   end
+    #   # => About to call #foo
+    #   # => Called foo
+    #   # => <# The result of #foo >
+    def suppress_stdout
+      original_stdout = $stdout
+      $stdout = output_buffer = StringIO.new
+      begin
+        return_value = yield(original_stdout)
+      ensure
+        $stdout = original_stdout
+        @suppressed_output ||= ""
+        @suppressed_output << output_buffer.string
+      end
+      return_value
     end
   end
 end
