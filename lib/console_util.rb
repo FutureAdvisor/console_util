@@ -110,6 +110,11 @@ module ConsoleUtil
       Process.wait pid_1
       Process.wait pid_2
       
+      # Because the connection to the database has a tendency to go away when calling this, reconnect here
+      if defined?(ActiveRecord)
+        suppress_stdout { ActiveRecord::Base.verify_active_connections! }
+      end
+      
       # return nil
       nil
     end
