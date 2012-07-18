@@ -91,12 +91,16 @@ module ConsoleUtil
         
         # loop continuously until we reach EOF (which happens when all
         # instances of placeholder_out have closed)
+        read_buffer = ''
         loop do
           begin
-            # iterate through $stdin, grep'ing as we go and outputing
-            # any results
-            print $stdin.readpartial(4096).grep(expression)
+            read_buffer << $stdin.readpartial(4096)
+            if line_match = read_buffer.match(/(.*\n)(.*)/)
+              print line_match[1].grep(expression)  # grep complete lines
+              read_buffer = line_match[2]           # save remaining partial line for the next iteration
+            end
           rescue EOFError
+            read_buffer.grep(expression)  # grep any remaining partial line at EOF
             break
           end
         end
