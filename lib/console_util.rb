@@ -37,5 +37,80 @@ module ConsoleUtil
         model_match[1].classify.constantize if model_match
       end
     end
+    
+    
+    # Allows you to filter output to the console using grep
+    # Ex:
+    #   def foo
+    #     puts "Some debugging output here"
+    #     puts "The value of x is y"
+    #     puts "The value of foo is bar"
+    #   end
+    # 
+    #   grep_stdout(/value/) { foo }
+    #   # => The value of x is y
+    #   # => The value of foo is bar
+    #   # => nil
+    def grep_stdout(expression)
+      # First we need to create a ruby "pipe" which is two sets of IO subclasses
+      # the first is read only (which represents a fake $stdin) and the second is
+      # write only (which represents a fake $stdout).
+      placeholder_in, placeholder_out = IO.pipe
+      
+      # Fork off a child process to handle the block.  We do this in a child process
+      # so that as soon as placeholder_out starts receiving data a second child
+      # process can operate on it via placeholder_in
+      pid_1 = fork {
+        # replace $stdout with placeholder_out
+        $stdout.reopen(placeholder_out)
+        
+        # we have to close both placeholder_out and placeholder_in because all instances
+        # of an IO stream must be closed in order for it to ever reach EOF.  There's three
+        # in this method; one in each child process and one in the main process.
+        placeholder_out.close
+        placeholder_in.close
+        
+        # sync $stdout so that we can start operating on it as soon as possible
+        $stdout.sync
+        
+        # allow the block to execute
+        yield
+      }
+      
+      # This child process handles the grep'ing.  Its done in a child process so that
+      # it can operate in parrell with the other one.
+      pid_2 = fork {
+        # sync $stdout so we can report any matches asap
+        $stdout.sync
+        
+        # same as the first child process
+        $stdin.reopen(placeholder_in)
+        placeholder_in.close
+        placeholder_out.close
+        
+        # loop continuously until we reach EOF (which happens when all
+        # instances of placeholder_out have closed)
+        loop do
+          begin
+            # iterate through $stdin, grep'ing as we go and outputing
+            # any results
+            print $stdin.readpartial(4096).grep(expression)
+          rescue EOFError
+            break
+          end
+        end
+      }
+      
+      # close this processes instances of placeholder_in and placeholder_out
+      placeholder_in.close
+      placeholder_out.close
+      
+      # Wait for both child processes to finish
+      Process.wait pid_1
+      Process.wait pid_2
+      
+      # return nil
+      nil
+    end
   end
 end
