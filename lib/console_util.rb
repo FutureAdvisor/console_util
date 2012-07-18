@@ -79,7 +79,7 @@ module ConsoleUtil
       }
       
       # This child process handles the grep'ing.  Its done in a child process so that
-      # it can operate in parrell with the other one.
+      # it can operate in parallel with the other one.
       pid_2 = fork {
         # sync $stdout so we can report any matches asap
         $stdout.sync
