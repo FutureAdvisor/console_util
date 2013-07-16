@@ -32,12 +32,18 @@ module ConsoleUtil
       end
     end
 
-    # Load all models into the environment
-    def load_all_models
-      Rails.root.join('app/models').each_entry do |model_file|
-        model_match = model_file.to_s.match(/^(.*)\.rb$/)
-        model_match[1].camelize.constantize if model_match
-      end
+    # Load all models into the environment and return them.
+    #
+    # Options:
+    #   :active_record  If true, returns only ActiveRecord models.
+    def load_all_models(options = {})
+      model_path      = Rails.root.join("app/models")
+      model_filenames = Dir[model_path.join("**/*.rb")]
+      model_filepaths = model_filenames.map { |filename| Pathname(filename).relative_path_from(model_path) }
+      model_names     = model_filepaths.map { |filepath| filepath.to_s.chomp(".rb").camelize }
+      models          = model_names.map(&:constantize)
+      models          = models.select { |model| model.is_a?(Class) && (model < ActiveRecord::Base) } if options[:active_record]
+      models
     end
 
     # Allows you to filter output to the console using grep
