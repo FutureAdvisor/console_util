@@ -26,7 +26,7 @@ module ConsoleUtil
     # Import a MySQL dump file.
     # [This may work with other databases, but has only been tested with MySQL.]
     def import_mysql_dump(filename)
-      sql_dump_file = File.open(Rails.root.join('sql', "#{filename}.sql"))
+      sql_dump_file = File.open(filename)
       while sql_statement = sql_dump_file.gets(";\n") do
         ActiveRecord::Base.connection.execute(sql_statement) unless sql_statement.blank?
       end
