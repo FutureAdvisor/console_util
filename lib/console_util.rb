@@ -89,11 +89,11 @@ module ConsoleUtil
 
             read_buffer << next_read
             if line_match = read_buffer.match(/^(.*\n)(.*)$/m)
-              match = line_match[1].grep(expression)  # grep complete lines
+              match = line_match[1].lines.grep(expression)  # grep complete lines
               read_buffer = line_match[2]             # save remaining partial line for the next iteration
             end
           rescue EOFError
-            match = read_buffer.grep(expression)      # grep any remaining partial line at EOF
+            match = read_buffer.lines.grep(expression)      # grep any remaining partial line at EOF
             break
           end
 
