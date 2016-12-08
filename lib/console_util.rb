@@ -28,6 +28,12 @@ module ConsoleUtil
     def import_mysql_dump(filename)
       sql_dump_file = File.open(filename)
       while sql_statement = sql_dump_file.gets(";\n") do
+        # Ruby 1.9 introduces support for encodings, so we need to handle this
+        if RUBY_VERSION >= '1.9.0'
+          # Force string to be recognized as ISO-8859-1 first so the call to encode won't be a no-op
+          sql_statement = sql_statement.force_encoding("ISO-8859-1").encode("UTF-8", :replace => nil)
+        end
+
         ActiveRecord::Base.connection.execute(sql_statement) unless sql_statement.blank?
       end
     end
