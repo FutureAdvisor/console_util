@@ -16,7 +16,7 @@ module ConsoleUtil
       ActiveRecord::Base.connection.class_eval do
         define_method(:execute) do |sql, *name|
           puts "#{color}#{sql}#{Color::RESET}"
-          super
+          super(sql, *name)
         end
       end
 
