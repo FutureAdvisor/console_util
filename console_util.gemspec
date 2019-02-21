@@ -6,8 +6,8 @@ Gem::Specification.new do |s|
   s.name        = "console_util"
   s.version     = ConsoleUtil::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Clyde Law"]
-  s.email       = ["clyde@futureadvisor.com"]
+  s.authors     = ["FutureAdvisor"]
+  s.email       = ["core.platform@futureadvisor.com"]
   s.homepage    = %q{http://github.com/FutureAdvisor/console_util}
   s.summary     = %q{Contains various utilities for working in the Rails console.}
   s.description = %q{Contains various utilities for working in the Rails console.}
